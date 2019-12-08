@@ -54,9 +54,9 @@ drawCell (Cell _ isConnectedFromTop isConnectedFromLeft _ _) =
 connect :: V.Vector Text -> V.Vector Text -> V.Vector Text
 connect v1 v2 = mconcat $ fmap (\x -> [(v1 ! x) <> (v2 ! x)]) [0 .. cellHeight - 1]
 
-showMaze :: (Int -> Int -> Int -> Int -> Grid -> IO Grid) -> IO ()
-showMaze gridGenerator = do
-  grid <- gridGenerator 15 15 0 0 g
+showMaze :: Int -> Int -> (Int -> Int -> Grid -> IO Grid) -> IO ()
+showMaze x y gridGenerator = do
+  grid <- gridGenerator 0 0 g
   putTextLn $ drawGrid grid
   where
-    g = createGrid 15 15
+    g = createGrid x y

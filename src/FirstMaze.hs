@@ -9,8 +9,10 @@ import           Lens.Micro.Platform
 import           Relude              hiding (Down, Left, Right)
 import           System.Random       (randomIO)
 
-doMaze :: Int -> Int -> Int -> Int -> Grid -> (Grid -> IO ()) -> IO Grid
-doMaze maxX maxY x y grid onUpdate =
+doMaze :: Int -> Int -> Grid -> (Grid -> IO ()) -> IO Grid
+doMaze  x y grid onUpdate = do
+  let maxX = grid ^. width 
+  let maxY = grid ^. height 
   if x < maxY
     then do
       connect :: Bool <- randomIO
@@ -28,7 +30,7 @@ doMaze maxX maxY x y grid onUpdate =
             if connect
               then visitedGrid & cells . ix x . ix (y + 1) . leftConnection .~ True
               else visitedGrid & cells . ix (x + 1) . ix y . topConnection .~ True
-      n <- doMaze maxX maxY nextX nextY newGrid onUpdate
+      n <- doMaze nextX nextY newGrid onUpdate
       let updated = n & cells . ix x . ix y . current .~ False
       onUpdate updated
       return updated

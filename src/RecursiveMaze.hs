@@ -23,8 +23,10 @@ updateGrid x y grid Left = grid & cells . ix x . ix y . leftConnection .~ True
 updateGrid x y grid Down = grid & cells . ix (x + 1) . ix y . topConnection .~ True
 updateGrid x y grid Up = grid & cells . ix x . ix y . topConnection .~ True
 
-doMaze :: Int -> Int -> Int -> Int -> Grid -> (Grid -> IO ()) -> IO Grid
-doMaze maxX maxY x y oldGrid onUpdate = do
+doMaze :: Int -> Int -> Grid -> (Grid -> IO ()) -> IO Grid
+doMaze x y oldGrid onUpdate = do
+  let maxX = oldGrid ^. width
+  let maxY = oldGrid ^. height
   directions <- randomDirections
   foldlM
     (\gridToProcess direction -> do
@@ -38,7 +40,7 @@ doMaze maxX maxY x y oldGrid onUpdate = do
                  (cells . ix x . ix y . current .~ True) &
                  (cells . ix newX . ix newY . current .~ True)
            onUpdate newGrid1
-           a <- doMaze maxX maxY newX newY newGrid1 onUpdate
+           a <- doMaze newX newY newGrid1 onUpdate
            let a1 = a & (cells . ix x . ix y . current .~ False) & (cells . ix newX . ix newY . current .~ False)
            onUpdate a1
            return a1
