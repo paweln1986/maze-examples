@@ -1,57 +1,30 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
+import           Common
+import           Control.Concurrent                  (forkIO, threadDelay)
+import qualified FirstMaze
+import           Graphics.Gloss
+import           Graphics.Gloss.Interface.IO.Animate (animateIO)
+import           Graphics.Gloss.Interface.IO.Display (controllerSetRedraw)
+import qualified RecursiveMaze
 import           Relude
-import Graphics.Gloss
-import RecursiveMaze
+import qualified Ui
 
 main :: IO ()
-main =  showMaze
-
---animate (InWindow "Tree" (500, 650) (20,  20))
---                black (picture 4)
-
-
--- The picture is a tree fractal, graded from brown to green
-picture :: Int -> Float -> Picture
-picture degree time
-        = Translate 0 (-300)
-        $ tree degree time (dim $ dim brown)
-
-
--- Basic stump shape
-stump :: Color -> Picture
-stump color
-        = Color color
-        $ Polygon [(30,0), (15,300), (-15,300), (-30,0)]
-
-
--- Make a tree fractal.
-tree    :: Int          -- Fractal degree
-        -> Float        -- time
-        -> Color        -- Color for the stump
-        -> Picture
-
-tree 0 time color = stump color
-tree n time color
- = let  smallTree
-                = Rotate (sin time)
-                $ Scale 0.5 0.5
-                $ tree (n-1) (- time) (greener color)
-   in   Pictures
-                [ stump color
-                , Translate 0 300 $ smallTree
-                , Translate 0 240 $ Rotate 20    smallTree
-                , Translate 0 180 $ Rotate (-20) smallTree
-                , Translate 0 120 $ Rotate 40    smallTree
-                , Translate 0  60 $ Rotate (-40) smallTree ]
-
-
--- A starting colour for the stump
-brown :: Color
-brown =  makeColorI 139 100 35  255
-
-
--- Make this color a little greener
-greener :: Color -> Color
-greener c = mixColors 1 10 green c
-
+main = do
+  tmp <- newIORef Nothing
+  a <- newEmptyMVar
+  let grid = createGrid 15 15
+  void $ forkIO $ void $ RecursiveMaze.doMaze 15 15 0 0 grid (\x -> putMVar a x >> threadDelay 50000)
+--  void $ forkIO $ void $ FirstMaze.doMaze 15 15 0 0 grid (\x -> putMVar a x >> threadDelay 50000)
+  animateIO
+    (InWindow "Nice Window" (1900, 1200) (100, 100))
+    white
+    (\_ -> do
+       b <- (fmap . fmap) Ui.drawGrid (tryTakeMVar a)
+       case b of
+         Just g  -> writeIORef tmp (Just g) >> return g
+         Nothing -> fromMaybe blank <$> readIORef tmp)
+    controllerSetRedraw
