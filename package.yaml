@@ -25,6 +25,9 @@ dependencies:
 - relude
 - text
 - microlens-platform
+- random
+- gloss
+- random-shuffle
 
 library:
   source-dirs: src

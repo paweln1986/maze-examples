@@ -1,79 +1,57 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedLists   #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-
 module Main where
 
-import qualified Data.Text           as Text
-import           Data.Vector         ((!))
-import qualified Data.Vector         as V
-import           Lib
 import           Relude
-import Lens.Micro.Platform
-
-data Cell =
-  Cell
-    { _cellId         :: Int
-    , _topConnection  :: Bool
-    , _leftConnection :: Bool
-    }
-  deriving (Show)
-
-makeLenses ''Cell
-
-cellWidth = 5
-
-cellHeight = 3
-
-data Grid =
-  Grid
-    { _name   :: Text
-    , _cells  :: V.Vector (V.Vector Cell)
-    , _width  :: Int
-    , _height :: Int
-    }
-makeLenses ''Grid
-
-createGrid :: Int -> Int -> Grid
-createGrid x y = Grid "" (V.fromList [V.fromList ((\x -> Cell (x * i) False False) <$> [1 .. x]) | i <- [1 .. y]]) x y
-
-topBar = "\9547" <> Text.replicate cellWidth "\9473"
-
-emptyTopBar = "\9547" <> Text.replicate cellWidth " "
-
-endingBar = Text.reverse topBar
-
-topBarLen = Text.length topBar
-
-drawGrid :: Grid -> Text
-drawGrid (Grid _ cells w h) = foldl' (\x y -> x <> drawLine y) "" cells <> "\9547" <> Text.replicate w endingBar
-  where
-    drawLine vec =
-      Text.unlines $ V.toList $ V.foldr connect (V.fromList $ ["\9547"] <> replicate cellHeight "\9475") $ V.map drawCell vec
-
-drawCell :: Cell -> V.Vector Text
-drawCell (Cell num topConnection leftConnection) =
-  [ if topConnection
-      then emptyTopBar
-      else topBar
-  ] <>
-  mconcat
-    (replicate
-       cellHeight
-       [ (if leftConnection
-           then " "
-           else "\9475") <> Text.replicate (topBarLen - 1) " "
-       ])
-  where
-    numLen = Text.length $ show num
-
-connect :: V.Vector Text -> V.Vector Text -> V.Vector Text
-connect v1 v2 = mconcat $ fmap (\x -> [(v1 ! x) <> (v2 ! x)]) [0 .. cellHeight - 1]
+import Graphics.Gloss
+import RecursiveMaze
 
 main :: IO ()
-main = putTextLn $ drawGrid g
-  where
-    g = createGrid 15 15
-      & cells . ix 4 . ix 4 . topConnection .~ True
-      & cells . ix 3 . ix 5 . leftConnection .~ True
+main =  showMaze
+
+--animate (InWindow "Tree" (500, 650) (20,  20))
+--                black (picture 4)
+
+
+-- The picture is a tree fractal, graded from brown to green
+picture :: Int -> Float -> Picture
+picture degree time
+        = Translate 0 (-300)
+        $ tree degree time (dim $ dim brown)
+
+
+-- Basic stump shape
+stump :: Color -> Picture
+stump color
+        = Color color
+        $ Polygon [(30,0), (15,300), (-15,300), (-30,0)]
+
+
+-- Make a tree fractal.
+tree    :: Int          -- Fractal degree
+        -> Float        -- time
+        -> Color        -- Color for the stump
+        -> Picture
+
+tree 0 time color = stump color
+tree n time color
+ = let  smallTree
+                = Rotate (sin time)
+                $ Scale 0.5 0.5
+                $ tree (n-1) (- time) (greener color)
+   in   Pictures
+                [ stump color
+                , Translate 0 300 $ smallTree
+                , Translate 0 240 $ Rotate 20    smallTree
+                , Translate 0 180 $ Rotate (-20) smallTree
+                , Translate 0 120 $ Rotate 40    smallTree
+                , Translate 0  60 $ Rotate (-40) smallTree ]
+
+
+-- A starting colour for the stump
+brown :: Color
+brown =  makeColorI 139 100 35  255
+
+
+-- Make this color a little greener
+greener :: Color -> Color
+greener c = mixColors 1 10 green c
+
